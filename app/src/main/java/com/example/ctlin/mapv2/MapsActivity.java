@@ -1,5 +1,8 @@
 package com.example.ctlin.mapv2;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -176,7 +179,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             StringBuffer sb = new StringBuffer();
 
-            String line = "";
+            String line;
             while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
@@ -186,7 +189,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             br.close();
 
         } catch (Exception e) {
-            Log.d("while downloading url", e.toString());
+            Log.d("downloadUrl", e.toString());
         } finally {
             iStream.close();
             urlConnection.disconnect();
@@ -202,7 +205,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         protected String doInBackground(String... url) {
 
             // For storing data from web service
-            String data = "";
+            String data = null;
 
             try {
                 // Fetching the data from web service
@@ -218,6 +221,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+
+            if (result == null) {
+                MapsActivity.this.showALert("Network connection fails");
+                return;
+            }
 
             ParserTask parserTask = new ParserTask();
 
@@ -247,6 +255,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 routes = parser.parse(jObject);
             } catch (Exception e) {
                 e.printStackTrace();
+                return null;
             }
             return routes;
         }
@@ -254,6 +263,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Executes in UI thread, after the parsing process
         @Override
         protected void onPostExecute(List<List<HashMap<String, String>>> result) {
+            if (result == null) {
+                MapsActivity.this.showALert("Parser error");
+                return;
+            }
+
             ArrayList<LatLng> points = null;
             PolylineOptions lineOptions = null;
             MarkerOptions markerOptions = new MarkerOptions();
@@ -287,6 +301,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // Drawing polyline in the Google Map for the i-th route
             mMap.addPolyline(lineOptions);
         }
+    }
+
+    private void showALert(String title){
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                MapsActivity.this);
+        alertDialogBuilder.setTitle(title + ", stop program?");
+        // set dialog message
+        alertDialogBuilder
+                .setMessage("Click 「STOP」to Stop program!")
+                .setCancelable(false)
+                .setPositiveButton("STOP,new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog,int id) {
+                        // if this button is clicked, close
+                        // current activity
+                        MapsActivity.this.finish();
+                    }
+                })
+                .setNegativeButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // if this button is clicked, just close
+                        // the dialog box and do nothing
+                        dialog.cancel();
+                    }
+                });
+        // create alert dialog
+        AlertDialog alertDialog = alertDialogBuilder.create();
+
+        // show it
+        alertDialog.show();
     }
 }
 
